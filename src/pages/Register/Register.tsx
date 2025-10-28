@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import Input from 'src/components/Input'
 import { schema } from 'src/utils/rules'
 import type { Schema } from 'src/utils/rules'
-import { registerAccount } from 'src/apis/auth.api'
+import authApi from 'src/apis/auth.api'
 import { omit } from 'lodash'
 import { isAxiosUnprocessableEntityError } from 'src/utils/utils'
 import type { ErrorResponse } from 'src/types/utils.type'
@@ -13,7 +13,8 @@ import { useContext } from 'react'
 import { AppContext } from 'src/contexts/app.context'
 import Button from 'src/components/Button'
 
-type FormData = Schema
+type FormData = Pick<Schema, 'email' | 'password' | 'confirm_password'>
+const registerSchema = schema.pick(['email', 'password', 'confirm_password'])
 
 export default function Register() {
   const { setIsAuthenticated, setProfile } = useContext(AppContext)
@@ -24,12 +25,12 @@ export default function Register() {
     setError,
     formState: { errors }
   } = useForm<FormData>({
-    resolver: yupResolver(schema)
+    resolver: yupResolver(registerSchema)
   })
 
   const registerAccountMutation = useMutation({
     mutationFn: (body: Omit<FormData, 'confirm_password'>) => {
-      return registerAccount(body)
+      return authApi.registerAccount(body)
     }
   })
   const onSubmit = handleSubmit((data) => {
@@ -71,9 +72,9 @@ export default function Register() {
   return (
     <div className='bg-orange'>
       <div className='container'>
-        <div className='grid grid-cols-1 lg:grid-cols-5 py-12 lg:py-32 lg:pr-10'>
+        <div className='grid grid-cols-1 py-12 lg:grid-cols-5 lg:py-32 lg:pr-10'>
           <div className='lg:col-span-2 lg:col-start-4'>
-            <form className='p-10 rounded bg-white shadow-sm' onSubmit={onSubmit} noValidate>
+            <form className='rounded bg-white p-10 shadow-sm' onSubmit={onSubmit} noValidate>
               <div className='text-2xl'>Đăng Nhập</div>
               <Input
                 type='email'
@@ -106,7 +107,7 @@ export default function Register() {
               <div className='mt-2'>
                 <Button
                   type='submit'
-                  className='w-full py-4 px-2 uppercase bg-red-500 text-white text-sm hover:bg-red-600 flex justify-center items-center gap-2 '
+                  className='flex w-full items-center justify-center gap-2 bg-red-500 px-2 py-4 text-sm text-white uppercase hover:bg-red-600'
                   isLoading={registerAccountMutation.isPending}
                   disabled={registerAccountMutation.isPending}
                 >
@@ -114,9 +115,9 @@ export default function Register() {
                 </Button>
               </div>
 
-              <div className='flex items-center justify-center mt-8'>
+              <div className='mt-8 flex items-center justify-center'>
                 <span className='text-gray-400'>Bạn đã có tài khoản?</span>
-                <Link className='text-red-400 ml-1' to='/login'>
+                <Link className='ml-1 text-red-400' to='/login'>
                   Đăng nhập
                 </Link>
               </div>
