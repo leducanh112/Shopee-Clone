@@ -1,54 +1,58 @@
+import classNames from 'classnames'
 import { createSearchParams, Link, useNavigate } from 'react-router-dom'
 import Button from 'src/components/Button'
-import path from 'src/constants/path'
-import type { queryConfig } from '../../ProductList'
-import type { Category } from 'src/types/category.type'
-import classNames from 'classnames'
 import InputNumber from 'src/components/InputNumber'
-import { Controller, useForm } from 'react-hook-form'
-import { schema, type Schema } from 'src/utils/rules'
+import path from 'src/constants/path'
+import type { Category } from 'src/types/category.type'
+import { useForm, Controller } from 'react-hook-form'
+import { type Schema, schema } from 'src/utils/rules'
 import { yupResolver } from '@hookform/resolvers/yup'
 import type { NoUndefinedField } from 'src/types/utils.type'
 import RatingStars from '../RatingStars'
-import { omit } from 'lodash'
+import omit from 'lodash/omit'
+import { useTranslation } from 'react-i18next'
+import { ObjectSchema } from 'yup'
+import type { queryConfig } from 'src/hooks/useQueryConfig'
 
 interface Props {
   queryConfig: queryConfig
   categories: Category[]
 }
 
-type FormData = NoUndefinedField<Pick<Schema, 'price_min' | 'price_max'>>
+type FormData = NoUndefinedField<Pick<Schema, 'price_max' | 'price_min'>>
 
 const priceSchema = schema.pick(['price_min', 'price_max'])
 
 export default function AsideFilter({ queryConfig, categories }: Props) {
-  const navigate = useNavigate()
+  const { t } = useTranslation('home')
   const { category } = queryConfig
   const {
     control,
     handleSubmit,
     trigger,
-    formState: { errors }
+    formState: { errors },
+    reset
   } = useForm<FormData>({
     defaultValues: {
       price_min: '',
       price_max: ''
     },
-    resolver: yupResolver(priceSchema),
-    shouldFocusError: false
+    resolver: yupResolver<FormData>(priceSchema as ObjectSchema<FormData>)
   })
+  const navigate = useNavigate()
   const onSubmit = handleSubmit((data) => {
     navigate({
       pathname: path.home,
       search: createSearchParams({
         ...queryConfig,
-        price_min: data.price_min,
-        price_max: data.price_max
+        price_max: data.price_max,
+        price_min: data.price_min
       }).toString()
     })
   })
 
   const handleRemoveAll = () => {
+    reset()
     navigate({
       pathname: path.home,
       search: createSearchParams(omit(queryConfig, ['price_min', 'price_max', 'rating_filter', 'category'])).toString()
@@ -59,11 +63,11 @@ export default function AsideFilter({ queryConfig, categories }: Props) {
     <div className='py-4'>
       <Link
         to={path.home}
-        className={classNames('flex items-center font-bold uppercase', {
+        className={classNames('flex items-center font-bold', {
           'text-orange': !category
         })}
       >
-        <svg viewBox='0 0 12 10' className='mr-3 h-3 w-3 fill-current'>
+        <svg viewBox='0 0 12 10' className='mr-3 h-4 w-3 fill-current'>
           <g fillRule='evenodd' stroke='none' strokeWidth={1}>
             <g transform='translate(-373 -208)'>
               <g transform='translate(155 191)'>
@@ -76,14 +80,14 @@ export default function AsideFilter({ queryConfig, categories }: Props) {
             </g>
           </g>
         </svg>
-        Tất cả danh mục
+        {t('aside filter.all categories')}
       </Link>
       <div className='my-4 h-[1px] bg-gray-300' />
       <ul>
         {categories.map((categoryItem) => {
           const isActive = category === categoryItem._id
           return (
-            <li className='py-2 pl-2'>
+            <li className='py-2 pl-2' key={categoryItem._id}>
               <Link
                 to={{
                   pathname: path.home,
@@ -92,7 +96,7 @@ export default function AsideFilter({ queryConfig, categories }: Props) {
                     category: categoryItem._id
                   }).toString()
                 }}
-                className={classNames('relative px-2 font-semibold', {
+                className={classNames('relative px-2', {
                   'text-orange font-semibold': isActive
                 })}
               >
@@ -125,7 +129,7 @@ export default function AsideFilter({ queryConfig, categories }: Props) {
             />
           </g>
         </svg>
-        Bộ lọc tìm kiếm
+        {t('aside filter.filter search')}
       </Link>
       <div className='my-4 h-[1px] bg-gray-300' />
       <div className='my-5'>
@@ -141,7 +145,7 @@ export default function AsideFilter({ queryConfig, categories }: Props) {
                     type='text'
                     className='grow'
                     placeholder='₫ TỪ'
-                    classNameInput='p-1 w-full outline-none border border-gray-300 focus:border-gray-500 focus:shadow-sm'
+                    classNameInput='p-1 w-full outline-none border border-gray-300 focus:border-gray-500 rounded-sm focus:shadow-sm'
                     classNameError='hidden'
                     {...field}
                     onChange={(event) => {
@@ -163,7 +167,7 @@ export default function AsideFilter({ queryConfig, categories }: Props) {
                     type='text'
                     className='grow'
                     placeholder='₫ ĐẾN'
-                    classNameInput='p-1 w-full outline-none border border-gray-300 focus:border-gray-500 focus:shadow-sm'
+                    classNameInput='p-1 w-full outline-none border border-gray-300 focus:border-gray-500 rounded-sm focus:shadow-sm'
                     classNameError='hidden'
                     {...field}
                     onChange={(event) => {
@@ -176,7 +180,7 @@ export default function AsideFilter({ queryConfig, categories }: Props) {
             />
           </div>
           <div className='mt-1 min-h-[1.25rem] text-center text-sm text-red-600'>{errors.price_min?.message}</div>
-          <Button className='bg-orange hover:bg-orange/80 flex w-full cursor-pointer items-center justify-center p-2 text-sm text-white uppercase'>
+          <Button className='bg-orange hover:bg-orange/80 flex w-full items-center justify-center p-2 text-sm text-white uppercase'>
             Áp dụng
           </Button>
         </form>
@@ -184,12 +188,12 @@ export default function AsideFilter({ queryConfig, categories }: Props) {
       <div className='my-4 h-[1px] bg-gray-300' />
       <div className='text-sm'>Đánh giá</div>
       <RatingStars queryConfig={queryConfig} />
-      <div className='my-4 h-[1px] bg-gray-300'></div>
+      <div className='my-4 h-[1px] bg-gray-300' />
       <Button
-        className='bg-orange hover:bg-orange/80 flex w-full cursor-pointer items-center justify-center p-2 text-sm text-white uppercase'
         onClick={handleRemoveAll}
+        className='bg-orange hover:bg-orange/80 flex w-full items-center justify-center p-2 text-sm text-white uppercase'
       >
-        Xoá tất cả
+        Xóa tất cả
       </Button>
     </div>
   )

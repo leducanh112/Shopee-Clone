@@ -1,41 +1,24 @@
-import AsideFilter from './components/AsideFilter'
-
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import useQueryParams from 'src/hooks/useQueryParams'
+import { Helmet } from 'react-helmet-async'
+import categoryApi from 'src/apis/category.api'
 import productApi from 'src/apis/product.api'
 import Pagination from 'src/components/Pagination'
-import type { ProductListConfig } from 'src/types/product.type'
-import { isUndefined, omitBy } from 'lodash'
-import categoryApi from 'src/apis/category.api'
+import useQueryConfig from 'src/hooks/useQueryConfig'
+import { type ProductListConfig } from 'src/types/product.type'
+import AsideFilter from './components/AsideFilter'
+import Product from './components/Product/Product'
 import SortProductList from './components/SortProductList'
-import Product from './components/Product'
 
-export type queryConfig = {
-  [key in keyof ProductListConfig]: string
-}
 export default function ProductList() {
-  const queryParams: queryConfig = useQueryParams()
-  const queryConfig: queryConfig = omitBy(
-    {
-      page: queryParams.page || '1',
-      limit: queryParams.limit,
-      sort_by: queryParams.sort_by,
-      exclude: queryParams.exclude,
-      name: queryParams.name,
-      order: queryParams.order,
-      price_max: queryParams.price_max,
-      price_min: queryParams.price_min,
-      rating_filter: queryParams.rating_filter,
-      category: queryParams.category
-    },
-    isUndefined
-  )
+  const queryConfig = useQueryConfig()
+
   const { data: productsData } = useQuery({
-    queryKey: ['products', queryParams],
+    queryKey: ['products', queryConfig],
     queryFn: () => {
       return productApi.getProducts(queryConfig as ProductListConfig)
     },
-    placeholderData: keepPreviousData
+    placeholderData: keepPreviousData,
+    staleTime: 3 * 60 * 1000
   })
 
   const { data: categoriesData } = useQuery({
@@ -47,6 +30,10 @@ export default function ProductList() {
 
   return (
     <div className='bg-gray-200 py-6'>
+      <Helmet>
+        <title>Trang chủ | Shopee Clone</title>
+        <meta name='description' content='Trang chủ dự án Shopee Clone' />
+      </Helmet>
       <div className='container'>
         {productsData && (
           <div className='grid grid-cols-12 gap-6'>
